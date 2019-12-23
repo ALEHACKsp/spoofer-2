@@ -28,3 +28,12 @@ typedef struct _KLDR_DATA_TABLE_ENTRY
   unsigned int	 SizeOfImageNotRounded;
   unsigned int	 TimeDateStamp;
 } KLDR_DATA_TABLE_ENTRY, * PKLDR_DATA_TABLE_ENTRY;
+
+typedef struct _IOC_REQUEST
+{
+	PVOID Buffer;
+	ULONG BufferLength;
+	PVOID OldContext;
+	PIO_COMPLETION_ROUTINE OldRoutine;
+
+} IOC_REQUEST, * PIOC_REQUEST;

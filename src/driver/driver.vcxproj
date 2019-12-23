@@ -94,6 +94,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\disks.hpp" />
     <ClInclude Include="headers\includes.hpp" />
     <ClInclude Include="headers\structs.hpp" />
     <ClInclude Include="headers\utility.hpp" />

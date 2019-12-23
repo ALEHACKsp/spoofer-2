@@ -1,12 +1,13 @@
 #include "headers/includes.hpp"
 #include "headers/structs.hpp"
 #include "headers/utility.hpp"
+#include "headers/disks.hpp"
 
 #include <algorithm>
 
 PDRIVER_DISPATCH PartmgrOriginal;
 
-auto GetModuleBase(PCWSTR Name) -> UINT_PTR
+auto get_module_base(PCWSTR Name) -> UINT_PTR
 {
   auto module = Utility::GetKernelModuleByName(Name);
 
@@ -27,16 +28,45 @@ auto GetModuleBase(PCWSTR Name) -> UINT_PTR
   return base;
 }
 
-NTSTATUS device_control(PDEVICE_OBJECT device, PIRP irp)
+void spoof_ioctl(PIO_STACK_LOCATION ioc, PIRP irp, PIO_COMPLETION_ROUTINE routine)
 {
+	auto request = (PIOC_REQUEST)ExAllocatePool(NonPagedPool, sizeof(IOC_REQUEST));
+
+	request->Buffer = irp->AssociatedIrp.SystemBuffer;
+	request->BufferLength = ioc->Parameters.DeviceIoControl.OutputBufferLength;
+	request->OldContext = ioc->Context;
+	request->OldRoutine = ioc->CompletionRoutine;
+
+	ioc->Control = SL_INVOKE_ON_SUCCESS;
+	ioc->Context = request;
+	ioc->CompletionRoutine = routine;
+}
+
+auto partmgr_control(PDEVICE_OBJECT device, PIRP irp) -> NTSTATUS
+{
+	auto ioc = IoGetCurrentIrpStackLocation(irp);
+
+	switch (ioc->Parameters.DeviceIoControl.IoControlCode)
+	{
+
+	case IOCTL_DISK_GET_PARTITION_INFO_EX:
+		spoof_ioctl(ioc, irp, partition_info_ioctl);
+		break;
+
+	case IOCTL_DISK_GET_DRIVE_LAYOUT_EX:
+		spoof_ioctl(ioc, irp, layout_info_ioctl);
+		break;
+
+	}
+
 	return PartmgrOriginal(device, irp);
 }
 
 const unsigned char jmp_buffer[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };                                            // jmp rax
 
-NTSTATUS Spoofer()
+NTSTATUS spoof_partmgr()
 {
-   auto partmgr_base = GetModuleBase(L"partmgr.sys");
+   auto partmgr_base = get_module_base(L"partmgr.sys");
 
    if (!partmgr_base)
    {
@@ -65,7 +95,7 @@ NTSTATUS Spoofer()
 
    memcpy(mapped_mem, jmp_buffer, sizeof(jmp_buffer));
 
-   *reinterpret_cast<void**>(&reinterpret_cast<unsigned char*>(mapped_mem)[2]) = &device_control;
+   *reinterpret_cast<void**>(&reinterpret_cast<unsigned char*>(mapped_mem)[2]) = &partmgr_control;
 
    MmUnmapIoSpace(mapped_mem, PAGE_SIZE);
 
@@ -99,7 +129,8 @@ NTSTATUS DriverEntry(DRIVER_OBJECT* driver_object, UNICODE_STRING* registry_path
     return STATUS_UNSUCCESSFUL;
   }
 
-  auto status = Spoofer();
+  
+  spoof_partmgr();
 
-  return status;
+  return STATUS_SUCCESS;
 }
