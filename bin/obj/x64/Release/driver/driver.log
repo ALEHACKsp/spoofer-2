@@ -1,0 +1,6 @@
+﻿  Building 'driver' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
+  main.cpp
+  main.cpp.obj : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
+  Generating code
+  Finished generating code
+  driver.vcxproj -> C:\Users\Vitor Luquini\Desktop\spoofer\bin\x64\Release\driver.sys
