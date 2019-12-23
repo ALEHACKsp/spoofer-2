@@ -4,6 +4,7 @@
 #include "headers/disks.hpp"
 
 #include <algorithm>
+#include <string.h>
 
 PDRIVER_DISPATCH PartmgrOriginal;
 
@@ -42,9 +43,29 @@ void spoof_ioctl(PIO_STACK_LOCATION ioc, PIRP irp, PIO_COMPLETION_ROUTINE routin
 	ioc->CompletionRoutine = routine;
 }
 
+auto is_from_valid_module(const char* module_name) -> bool
+{
+	if (strstr("csgo", module_name) || strstr("esportal", module_name) || strstr("Gamers Cl", module_name) )
+	{
+		DbgPrint("Process %s called Partmgr IOCTL \n", module_name);
+		return true;
+	}
+
+	return false;
+}
+
 auto partmgr_control(PDEVICE_OBJECT device, PIRP irp) -> NTSTATUS
 {
 	auto ioc = IoGetCurrentIrpStackLocation(irp);
+
+	auto process = IoGetCurrentProcess();
+
+	auto file_name = (const char*)( PsGetProcessImageFileName(process) );
+
+	if (!is_from_valid_module(file_name))
+	{
+		return PartmgrOriginal(device, irp);
+	}
 
 	switch (ioc->Parameters.DeviceIoControl.IoControlCode)
 	{

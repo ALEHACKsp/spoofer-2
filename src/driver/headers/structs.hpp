@@ -1,5 +1,6 @@
 #pragma once
 
+extern "C" __declspec(dllimport) const char* PsGetProcessImageFileName(PEPROCESS Process);
 extern "C" __declspec(dllimport) PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
 extern "C" __declspec(dllimport) POBJECT_TYPE * IoDriverObjectType;
 extern "C" __declspec(dllimport) NTSTATUS NTAPI ObReferenceObjectByName(PUNICODE_STRING ObjectName, ULONG Attributes, PACCESS_STATE AccessState, ACCESS_MASK DesiredAccess, POBJECT_TYPE ObjectType, KPROCESSOR_MODE AccessMode, PVOID ParseContext OPTIONAL, PVOID * Object);
